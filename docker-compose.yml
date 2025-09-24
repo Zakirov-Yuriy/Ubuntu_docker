@@ -1,0 +1,66 @@
+
+name: web-stack
+
+networks:
+  app_net:
+    driver: bridge
+
+volumes:
+  pg_data: {}
+  portainer_data: {}
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./php/public:/var/www/public:ro
+    depends_on:
+      php:
+        condition: service_started
+    networks: [app_net]
+
+  php:
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    image: php-fpm-with-pgsql:8.3
+    container_name: php
+    restart: unless-stopped
+    environment:
+      PHP_MEMORY_LIMIT: 256M
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./php/public:/var/www/public:rw
+    networks: [app_net]
+    healthcheck:
+      test: ["CMD-SHELL", "php -v || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  db:
+    image: postgres:16-alpine
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    expose:
+      - "5432"   # доступен только внутри сети app_net
+    networks: [app_net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
