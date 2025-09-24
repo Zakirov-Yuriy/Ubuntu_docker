@@ -32,14 +32,14 @@ PHP info: http://localhost/info.php
 Данные подключения вынесены в .env, в репозитории хранится только .env.example.
 
 # Полезные команды
-# статус контейнеров
+ статус контейнеров
 docker compose ps
 
-# логи всех сервисов
+ логи всех сервисов
 docker compose logs -f
 
-# перезапуск сервисов
+ перезапуск сервисов
 docker compose restart nginx php db
 
-# остановка и удаление контейнеров
+ остановка и удаление контейнеров
 docker compose down
